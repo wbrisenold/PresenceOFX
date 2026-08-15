@@ -71,6 +71,7 @@ constexpr OfxStatus kOfxStatReplyDefault = 14;
 #define kOfxImageEffectPropProjectOffset "OfxImageEffectPropProjectOffset"
 #define kOfxImageEffectPropRenderScale "OfxImageEffectPropRenderScale"
 #define kOfxImageEffectPropMetalRenderSupported "OfxImageEffectPropMetalRenderSupported"
+#define kOfxImageEffectPropMetalEnabled "OfxImageEffectPropMetalEnabled"
 #define kOfxImageEffectPropMetalCommandQueue "OfxImageEffectPropMetalCommandQueue"
 
 #define kOfxImageClipPropFieldOrder "OfxImageClipPropFieldOrder"

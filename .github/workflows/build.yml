@@ -30,6 +30,8 @@ jobs:
           set -euxo pipefail
           xcodebuild -version
           clang++ --version
+          xcrun --find metal
+          xcrun --find metallib
           cmake --version
       - name: Build universal OFX
         run: bash scripts/build_macos.sh

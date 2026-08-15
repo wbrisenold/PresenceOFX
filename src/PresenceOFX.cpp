@@ -1,5 +1,6 @@
 #include "PresenceOFX_OFX.h"
 #include "PresenceCPU.h"
+#include "MetalBridge.h"
 #include <cstdarg>
 #include <cstring>
 #include <memory>
@@ -83,6 +84,7 @@ static OfxStatus describe(OfxImageEffectHandle effect) {
   setInt(props, kOfxImageEffectPropSupportsMultipleClipDepths, 0, 0);
   setInt(props, kOfxImageEffectPropTemporalClipAccess, 0, 0);
   setInt(props, kOfxImageEffectPropRenderTwiceAlways, 0, 0);
+  setString(props, kOfxImageEffectPropMetalRenderSupported, 0, "true");
   return kOfxStatOK;
 }
 
@@ -216,6 +218,18 @@ static OfxStatus render(OfxImageEffectHandle effect, OfxPropertySetHandle inArgs
   int dstStrideFloats = dstRowBytes / static_cast<int>(sizeof(float));
 
   Params p = fetchParams(d, time);
+  int metalEnabled = 0;
+  if (gProp->propGetInt(inArgs, kOfxImageEffectPropMetalEnabled, 0, &metalEnabled) == kOfxStatOK && metalEnabled) {
+    void* metalQ = nullptr;
+    const bool hasQueue = gProp->propGetPointer(inArgs, kOfxImageEffectPropMetalCommandQueue, 0, &metalQ) == kOfxStatOK && metalQ;
+    if (!hasQueue) {
+      gEffect->clipReleaseImage(srcImg); gEffect->clipReleaseImage(dstImg);
+      return kOfxStatFailed;
+    }
+    const bool ok = runMetal(metalQ,width,height,srcData,dstData,srcStrideFloats,dstStrideFloats,p);
+    gEffect->clipReleaseImage(srcImg); gEffect->clipReleaseImage(dstImg);
+    return ok ? kOfxStatOK : kOfxStatFailed;
+  }
   processRGBA(static_cast<const float*>(srcData),static_cast<float*>(dstData),width,height,srcStrideFloats,dstStrideFloats,p);
   gEffect->clipReleaseImage(srcImg); gEffect->clipReleaseImage(dstImg); return kOfxStatOK;
 }

@@ -28,3 +28,7 @@ CPU image-presence engine, universal arm64+x86_64 GitHub build, and tag-based re
 
 ## v1.0.6 Resolve stability fix
 - Disabled the unproven Resolve Metal OFX path; the plugin now advertises and uses the CPU OpenFX renderer only.
+
+## v1.0.7 Metal render restore
+- Restored OpenFX 1.5 Metal rendering behind the `OfxImageEffectPropMetalEnabled` gate.
+- Kept CPU fallback for non-Metal render actions.

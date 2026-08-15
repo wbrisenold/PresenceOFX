@@ -14,5 +14,6 @@ case " $ARCHS " in *" x86_64 "*) ;; *) exit 1;; esac
 nm -gU "$BIN" | grep -q '_OfxGetNumberOfPlugins'
 nm -gU "$BIN" | grep -q '_OfxGetPlugin'
 nm -gU "$BIN" | grep -q '_OfxSetHost'
+test -s "$BUNDLE/Contents/Resources/PresenceKernels.metallib"
 codesign --verify --deep --strict "$BUNDLE"
 echo "Host-load bundle sanity passed."

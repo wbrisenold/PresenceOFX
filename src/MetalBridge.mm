@@ -13,5 +13,5 @@ bool runMetal(void* cq,int w,int h,void* srcH,void* dstH,int ss,int ds,const Par
   if(tw<1) tw=1;
   NSUInteger available=gState.pipeline.maxTotalThreadsPerThreadgroup/tw;
   NSUInteger th=available<16?available:16;
-  if(th<1) th=1; [enc dispatchThreads:MTLSizeMake(w,h,1) threadsPerThreadgroup:MTLSizeMake(tw,th,1)]; [enc endEncoding]; [cb commit]; [cb waitUntilCompleted]; return [cb status]==MTLCommandBufferStatusCompleted; }
+  if(th<1) th=1; [enc dispatchThreads:MTLSizeMake(w,h,1) threadsPerThreadgroup:MTLSizeMake(tw,th,1)]; [enc endEncoding]; [cb commit]; return true; }
 }
