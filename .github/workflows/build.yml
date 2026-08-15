@@ -41,7 +41,7 @@ jobs:
           BUNDLE="$(find build -type d -name 'PresenceOFX.ofx.bundle' -print -quit)"
           test -d "$BUNDLE"
           EXEC="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$BUNDLE/Contents/Info.plist")"
-          test "$EXEC" = "PresenceOFX"
+          test "$EXEC" = "PresenceOFX.ofx"
           test -f "$BUNDLE/Contents/MacOS/$EXEC"
           plutil -lint "$BUNDLE/Contents/Info.plist"
       - name: Upload artifact

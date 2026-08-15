@@ -42,6 +42,10 @@ test -s "$BUNDLE/Contents/Resources/PresenceKernels.metallib"
 
 echo "== Validate universal binary =="
 BIN="$BUNDLE/Contents/MacOS/PresenceOFX"
+if [ -f "$BIN" ]; then
+  mv "$BIN" "$BUNDLE/Contents/MacOS/PresenceOFX.ofx"
+fi
+BIN="$BUNDLE/Contents/MacOS/PresenceOFX.ofx"
 test -f "$BIN"
 
 echo "== Validate macOS bundle metadata =="
@@ -49,7 +53,7 @@ PLIST="$BUNDLE/Contents/Info.plist"
 test -f "$PLIST"
 PLIST_EXEC="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$PLIST")"
 echo "CFBundleExecutable: $PLIST_EXEC"
-test "$PLIST_EXEC" = "PresenceOFX"
+test "$PLIST_EXEC" = "PresenceOFX.ofx"
 test -f "$BUNDLE/Contents/MacOS/$PLIST_EXEC"
 plutil -lint "$PLIST"
 

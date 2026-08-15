@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
   <key>CFBundleDevelopmentRegion</key><string>English</string>
-  <key>CFBundleExecutable</key><string>PresenceOFX</string>
+  <key>CFBundleExecutable</key><string>PresenceOFX.ofx</string>
   <key>CFBundleIdentifier</key><string>com.luma.presenceofx</string>
   <key>CFBundleName</key><string>PresenceOFX</string>
   <key>CFBundlePackageType</key><string>BNDL</string>
