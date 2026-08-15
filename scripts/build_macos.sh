@@ -42,7 +42,7 @@ if otool -L "$BIN" | grep -E '/opt/homebrew|/usr/local/opt'; then
   exit 1
 fi
 
-codesign --force --sign - "$BUNDLE"
+codesign --force --deep --sign - "$BUNDLE"
 codesign --verify --deep --strict "$BUNDLE"
 
 rm -rf dist
