@@ -1,0 +1,47 @@
+name: Build PresenceOFX
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  linux-model-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source sanity
+        run: python3 ci/source_sanity.py
+      - name: Build model tests
+        run: |
+          g++ -std=c++17 -O2 -Wall -Wextra -Werror=return-type -Isrc tests/presence_model_tests.cpp src/PresenceCPU.cpp -o presence_model_tests
+          ./presence_model_tests
+
+  macos-build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain preflight
+        run: |
+          set -euxo pipefail
+          xcodebuild -version
+          clang++ --version
+          xcrun --find metal
+          xcrun --find metallib
+          cmake --version
+      - name: Build universal OFX
+        run: scripts/build_macos.sh
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PresenceOFX-macOS-universal
+          path: dist/PresenceOFX-macOS-universal.zip
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/PresenceOFX-macOS-universal.zip
