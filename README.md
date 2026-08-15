@@ -1,6 +1,6 @@
 # PresenceOFX
 
-**PresenceOFX** is a Metal-accelerated OpenFX image-character plugin for DaVinci Resolve. It is designed for the problem where footage is technically balanced but still feels thin, cheap, hazy, or not fully present.
+**PresenceOFX** is an OpenFX image-character plugin for DaVinci Resolve. It is designed for the problem where footage is technically balanced but still feels thin, cheap, hazy, or not fully present.
 
 It is not a film-emulation plugin and it is not a LUT. It is a spatial image-character stage that adds dimensionality through local tonal separation, frequency shaping, edge-safe presence, highlight/shadow detail, subtle optical bloom, and texture response.
 
@@ -49,7 +49,7 @@ This follows the proven no-SDK/no-Homebrew pattern from our earlier OFX work:
 - no Homebrew packages
 - no `expat::expat`
 - pinned minimal OFX ABI header in `src/PresenceOFX_OFX.h`
-- Metal shader compiled with `metal` and `metallib`
+- CPU OpenFX renderer
 - universal `arm64` + `x86_64` binary
 - ad-hoc signed bundle
 - export-symbol checks for `OfxGetPlugin`, `OfxGetNumberOfPlugins`, and `OfxSetHost`
@@ -79,4 +79,4 @@ Restart Resolve after installing.
 
 ## Production status
 
-This is a production-candidate repo package. The CPU algorithm and test harness are included, and GitHub Actions performs binary validation. The true release gate is the first macOS GitHub Actions Metal compile plus Resolve runtime testing on representative footage.
+This is a production-candidate repo package. The CPU algorithm and test harness are included, and GitHub Actions performs binary validation. The true release gate is Resolve runtime testing on representative footage.

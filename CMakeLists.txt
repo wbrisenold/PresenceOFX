@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(PresenceOFX LANGUAGES C CXX OBJCXX)
+project(PresenceOFX LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,18 +13,15 @@ endif()
 add_library(PresenceOFX MODULE
   src/PresenceOFX.cpp
   src/PresenceCPU.cpp
-  src/MetalBridge.mm
 )
 
 target_include_directories(PresenceOFX PRIVATE src)
 
 target_compile_options(PresenceOFX PRIVATE
   $<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Wpedantic -Werror=return-type>
-  $<$<COMPILE_LANGUAGE:OBJCXX>:-Wall -Wextra -Wpedantic -Werror=return-type>
 )
 
 if(APPLE)
-  target_link_libraries(PresenceOFX PRIVATE "-framework Foundation" "-framework Metal" "-framework QuartzCore")
   set_target_properties(PresenceOFX PROPERTIES
     PREFIX ""
     SUFFIX ".ofx"

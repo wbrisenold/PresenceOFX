@@ -1,6 +1,6 @@
 # PresenceOFX v1.0.5
 
-Metal image-presence engine with direct Resolve MTLBuffer processing, universal arm64+x86_64 GitHub build, xcrun Metal compiler, CPU fallback only on CPU renders, and tag-based release ZIP.
+CPU image-presence engine, universal arm64+x86_64 GitHub build, and tag-based release ZIP.
 
 ## Build fix
 
@@ -22,6 +22,9 @@ Metal image-presence engine with direct Resolve MTLBuffer processing, universal 
 - Workflow invokes the build through `bash` and restores script permissions.
 
 ## v1.0.5 Resolve load fix
-- Fixed CFBundleExecutable to match the actual Mach-O name: PresenceOFX.
+- Fixed CFBundleExecutable to match the actual Mach-O name: PresenceOFX.ofx.
 - Build now verifies Info.plist and binary basename match before packaging.
 - Added CI host-load bundle validation.
+
+## v1.0.6 Resolve stability fix
+- Disabled the unproven Resolve Metal OFX path; the plugin now advertises and uses the CPU OpenFX renderer only.
