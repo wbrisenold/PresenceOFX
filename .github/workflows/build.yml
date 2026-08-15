@@ -34,8 +34,6 @@ jobs:
           xcrun --find metallib
           cmake --version
       - name: Build universal OFX
-      - name: Prepare scripts
-        run: chmod +x scripts/*.sh INSTALL_BUILT_PLUGIN.command || true
         run: bash scripts/build_macos.sh
       - name: Validate bundle executable
         run: |
