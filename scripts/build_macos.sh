@@ -13,7 +13,7 @@ rm -rf build
 cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release --parallel "$(sysctl -n hw.ncpu)"
 
-xcrun metal -std=metal2.4 -O3 -c shaders/PresenceKernels.metal -o build/PresenceKernels.air
+xcrun metal -std=macos-metal2.4 -O3 -c shaders/PresenceKernels.metal -o build/PresenceKernels.air
 xcrun metallib build/PresenceKernels.air -o build/PresenceKernels.metallib
 
 BUNDLE="build/PresenceOFX.ofx.bundle"

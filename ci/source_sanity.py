@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 r=Path(__file__).resolve().parents[1]
 cpp=(r/'src/PresenceOFX.cpp').read_text(); mm=(r/'src/MetalBridge.mm').read_text(); bs=(r/'scripts/build_macos.sh').read_text(); cm=(r/'CMakeLists.txt').read_text(); wf=(r/'.github/workflows/build.yml').read_text()
-checks={'OFX exports':all(x in cpp for x in ['OfxGetNumberOfPlugins','OfxGetPlugin','OfxSetHost']),'Metal declared':'kOfxImageEffectPropMetalRenderSupported' in cpp,'Direct MTLBuffer':'id<MTLBuffer> inB' in mm and 'id<MTLBuffer> outB' in mm,'No unsafe copy':'newBufferWithBytes:src' not in mm and 'memcpy(dst' not in mm,'dladdr metallib':'dladdr' in mm,'xcrun tools':'xcrun --find metal' in bs and 'xcrun metal' in bs,'Universal':'arm64;x86_64' in cm,'Tag release':'softprops/action-gh-release' in wf}
+checks={'OFX exports':all(x in cpp for x in ['OfxGetNumberOfPlugins','OfxGetPlugin','OfxSetHost']),'Metal declared':'kOfxImageEffectPropMetalRenderSupported' in cpp,'Direct MTLBuffer':'id<MTLBuffer> inB' in mm and 'id<MTLBuffer> outB' in mm,'No unsafe copy':'newBufferWithBytes:src' not in mm and 'memcpy(dst' not in mm,'dladdr metallib':'dladdr' in mm,'xcrun tools':'xcrun --find metal' in bs and 'xcrun metal' in bs,
+'macOS Metal standard':'-std=macos-metal2.4' in bs and '-std=metal2.4' not in bs,'Universal':'arm64;x86_64' in cm,'Tag release':'softprops/action-gh-release' in wf}
 for k,v in checks.items(): print(f"[{'PASS' if v else 'FAIL'}] {k}")
 if not all(checks.values()): sys.exit(1)
