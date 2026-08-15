@@ -25,7 +25,8 @@ fi
 mkdir -p "$BUNDLE/Contents/Resources"
 cp build/PresenceKernels.metallib "$BUNDLE/Contents/Resources/PresenceKernels.metallib"
 
-BIN="$BUNDLE/Contents/MacOS/PresenceOFX.ofx"
+BIN="$BUNDLE/Contents/MacOS/PresenceOFX"
+[ -f "$BIN" ] || BIN="$BUNDLE/Contents/MacOS/PresenceOFX.ofx"
 [ -f "$BIN" ]
 file "$BIN"
 ARCHS="$(lipo -archs "$BIN")"
