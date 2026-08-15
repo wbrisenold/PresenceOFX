@@ -34,7 +34,18 @@ jobs:
           xcrun --find metallib
           cmake --version
       - name: Build universal OFX
+      - name: Prepare scripts
+        run: chmod +x scripts/*.sh INSTALL_BUILT_PLUGIN.command || true
         run: bash scripts/build_macos.sh
+      - name: Validate bundle executable
+        run: |
+          set -euxo pipefail
+          BUNDLE="$(find build -type d -name 'PresenceOFX.ofx.bundle' -print -quit)"
+          test -d "$BUNDLE"
+          EXEC="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$BUNDLE/Contents/Info.plist")"
+          test "$EXEC" = "PresenceOFX"
+          test -f "$BUNDLE/Contents/MacOS/$EXEC"
+          plutil -lint "$BUNDLE/Contents/Info.plist"
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
