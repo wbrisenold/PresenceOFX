@@ -34,7 +34,9 @@ jobs:
           xcrun --find metallib
           cmake --version
       - name: Build universal OFX
-        run: scripts/build_macos.sh
+      - name: Prepare scripts
+        run: chmod +x scripts/*.sh INSTALL_BUILT_PLUGIN.command || true
+        run: bash scripts/build_macos.sh
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
