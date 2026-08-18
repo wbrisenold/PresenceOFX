@@ -1,185 +1,48 @@
 #include "PresenceCPU.h"
 #include <algorithm>
 #include <cmath>
-#include <vector>
-
 namespace presence {
-
-static inline float clampf(float x, float a, float b) { return std::max(a, std::min(b, x)); }
-float clamp01(float x) { return clampf(x, 0.0f, 1.0f); }
-float luma(float r, float g, float b) { return 0.2126f * r + 0.7152f * g + 0.0722f * b; }
-
-static inline float smoothstep(float e0, float e1, float x) {
-  if (e1 <= e0) return x >= e1 ? 1.0f : 0.0f;
-  x = clampf((x - e0) / (e1 - e0), 0.0f, 1.0f);
-  return x * x * (3.0f - 2.0f * x);
+static inline float cf(float x,float a,float b){return std::max(a,std::min(b,x));}
+static inline int ci(int x,int a,int b){return std::max(a,std::min(b,x));}
+static inline float ss(float a,float b,float x){if(b<=a)return x>=b?1.f:0.f;x=cf((x-a)/(b-a),0.f,1.f);return x*x*(3.f-2.f*x);}
+static inline float lum(float r,float g,float b){return .2126f*r+.7152f*g+.0722f*b;}
+struct C3{float r,g,b;};
+static inline C3 pix(const float* s,int w,int h,int stride,int x,int y){x=ci(x,0,w-1);y=ci(y,0,h-1);const float* p=s+y*stride+x*4;return {p[0],p[1],p[2]};}
+static inline float gw(C3 c,C3 s,float sigma){float dr=s.r-c.r,dg=s.g-c.g,db=s.b-c.b;float d2=dr*dr+dg*dg+db*db;float s2=std::max(sigma*sigma,1e-8f);return 1.f/(1.f+d2/s2);}
+static inline void add(const float* s,int w,int h,int stride,int x,int y,int dx,int dy,float sw,float sig,C3 c,float& sy,float& ww){C3 q=pix(s,w,h,stride,x+dx,y+dy);float z=sw*gw(c,q,sig);sy+=z*lum(q.r,q.g,q.b);ww+=z;}
+static inline float blur(const float* s,int w,int h,int stride,int x,int y,int radius,float sig){
+ int r=std::max(1,radius), hh=std::max(1,r/2);
+ int h7=std::max(1,int(float(hh)*.70710678f+.5f));
+ int r92=std::max(1,int(float(r)*.92387953f+.5f));
+ int r38=std::max(1,int(float(r)*.38268343f+.5f));
+ C3 c=pix(s,w,h,stride,x,y); float sy=4.f*lum(c.r,c.g,c.b), ww=4.f;
+ add(s,w,h,stride,x,y, hh,0,1.5f,sig,c,sy,ww); add(s,w,h,stride,x,y,-hh,0,1.5f,sig,c,sy,ww);
+ add(s,w,h,stride,x,y,0, hh,1.5f,sig,c,sy,ww); add(s,w,h,stride,x,y,0,-hh,1.5f,sig,c,sy,ww);
+ add(s,w,h,stride,x,y, h7, h7,1.15f,sig,c,sy,ww); add(s,w,h,stride,x,y,-h7, h7,1.15f,sig,c,sy,ww);
+ add(s,w,h,stride,x,y, h7,-h7,1.15f,sig,c,sy,ww); add(s,w,h,stride,x,y,-h7,-h7,1.15f,sig,c,sy,ww);
+ add(s,w,h,stride,x,y, r92, r38,.8f,sig,c,sy,ww); add(s,w,h,stride,x,y, r38, r92,.8f,sig,c,sy,ww);
+ add(s,w,h,stride,x,y,-r38, r92,.8f,sig,c,sy,ww); add(s,w,h,stride,x,y,-r92, r38,.8f,sig,c,sy,ww);
+ add(s,w,h,stride,x,y,-r92,-r38,.8f,sig,c,sy,ww); add(s,w,h,stride,x,y,-r38,-r92,.8f,sig,c,sy,ww);
+ add(s,w,h,stride,x,y, r38,-r92,.8f,sig,c,sy,ww); add(s,w,h,stride,x,y, r92,-r38,.8f,sig,c,sy,ww);
+ return sy/std::max(ww,1e-8f);
 }
-
-static inline int clampi(int x, int a, int b) { return std::max(a, std::min(b, x)); }
-
-static inline float sampleY(const std::vector<float>& Y, int w, int h, int x, int y) {
-  x = clampi(x, 0, w - 1);
-  y = clampi(y, 0, h - 1);
-  return Y[y * w + x];
+static inline float dead(float x,float t){float a=std::fabs(x);if(a<=t)return 0.f;float d=a-t;float k=ss(0.f,t*2.f+1e-6f,d);return (x<0?-1.f:1.f)*d*k;}
+static inline float limit(float x,float L){L=std::max(L,1e-6f);return x/(1.f+std::fabs(x)/L);}
+static inline float skin(float r,float g,float b,float y){float sum=r+g+b+1e-6f,nr=r/sum,ng=g/sum;float mx=std::max(r,std::max(g,b)),mn=std::min(r,std::min(g,b));float chrom=ss(.025f,.22f,mx-mn);float rg=ss(.32f,.48f,nr)*(1-ss(.50f,.62f,nr));float gg=ss(.24f,.38f,ng)*(1-ss(.42f,.52f,ng));float yl=ss(.05f,.25f,y)*(1-ss(.92f,1.25f,y));return cf(rg*gg*yl*chrom,0.f,1.f);}
+void processRGBA(const float* s,float* d,int w,int h,int ssf,int dsf,const Params& pin){
+ Params p=pin;p.amount=cf(p.amount,0,2);p.depth=cf(p.depth,-1,1);p.micro=cf(p.micro,-1,1);p.atmosphere=cf(p.atmosphere,-1,1);p.edgeSoft=cf(p.edgeSoft,0,1);p.hiPresence=cf(p.hiPresence,0,1);p.shPresence=cf(p.shPresence,0,1);p.texture=cf(p.texture,0,1);p.bloom=cf(p.bloom,0,1);p.skinGuard=cf(p.skinGuard,0,1);
+ int rs=std::max(1,w/420),rl=std::max(4,w/85),rb=std::max(6,w/55);
+ for(int y=0;y<h;y++)for(int x=0;x<w;x++){const float* q=s+y*ssf+x*4;float* o=d+y*dsf+x*4;float r=q[0],g=q[1],b=q[2],Y=lum(r,g,b);
+  if(p.amount==0.f&&p.view==0){o[0]=r;o[1]=g;o[2]=b;o[3]=q[3];continue;}
+  float sm=blur(s,w,h,ssf,x,y,rs,.095f),la=blur(s,w,h,ssf,x,y,rl,.055f),bi=blur(s,w,h,ssf,x,y,rb,.085f);
+  float br0=Y-la,mi0=sm-la,fi0=Y-sm,nf=.0018f+.0022f*cf(std::fabs(Y),0,1.5f);
+  float br=dead(br0,nf*1.35f),mi=dead(mi0,nf*.85f),fi=dead(fi0,nf*1.10f);
+  float ee=std::fabs(fi)+.45f*std::fabs(mi),em=ss(.005f,.05f,ee),dg=ss(nf*2.5f,nf*9.f+1e-6f,std::fabs(fi0));
+  float sk=skin(r,g,b,Y),prot=1-p.skinGuard*sk,hi=ss(.55f,1.15f,Y),sh=1-ss(.05f,.35f,Y);
+  float bg=1-.80f*em,hfg=(1-p.edgeSoft*.75f)*dg;
+  float pres=0;pres+=p.depth*br*bg*.95f;pres+=p.micro*fi*hfg*.58f;pres+=p.hiPresence*hi*mi*dg*.52f;pres+=p.shPresence*sh*mi*dg*.56f;pres+=p.texture*fi*dg*(1-sk*.75f)*.18f;pres+=p.atmosphere*br*bg*.35f;
+  float bloomE=std::max(0.f,bi-std::max(Y,.72f));float bl=p.bloom*bloomE*.07f;float delta=(pres*prot+bl)*p.amount;delta=limit(delta,.032f+.085f*cf(std::fabs(Y),0,1.5f));
+  if(p.view==1){float m=cf(.5f+pres*7.f,0,1);o[0]=o[1]=o[2]=m;}else if(p.view==2){o[0]=o[1]=o[2]=cf(em,0,1);}else if(p.view==3){o[0]=o[1]=o[2]=cf(std::fabs(delta)*10.f,0,1);}else{o[0]=r+delta;o[1]=g+delta;o[2]=b+delta;}o[3]=q[3];
+ }
 }
-
-// CPU parity for the Metal 17-tap multi-ring blur.
-static inline float blur17(const std::vector<float>& Y, int w, int h, int x, int y, int radius) {
-  int r = std::max(1, radius);
-  int half = std::max(1, r / 2);
-
-  float acc = 4.0f * sampleY(Y, w, h, x, y);
-
-  acc += 2.0f * sampleY(Y, w, h, x-half, y);
-  acc += 2.0f * sampleY(Y, w, h, x+half, y);
-  acc += 2.0f * sampleY(Y, w, h, x, y-half);
-  acc += 2.0f * sampleY(Y, w, h, x, y+half);
-
-  acc += sampleY(Y, w, h, x-half, y-half);
-  acc += sampleY(Y, w, h, x+half, y-half);
-  acc += sampleY(Y, w, h, x-half, y+half);
-  acc += sampleY(Y, w, h, x+half, y+half);
-
-  acc += sampleY(Y, w, h, x-r, y);
-  acc += sampleY(Y, w, h, x+r, y);
-  acc += sampleY(Y, w, h, x, y-r);
-  acc += sampleY(Y, w, h, x, y+r);
-
-  acc += 0.5f * sampleY(Y, w, h, x-r, y-r);
-  acc += 0.5f * sampleY(Y, w, h, x+r, y-r);
-  acc += 0.5f * sampleY(Y, w, h, x-r, y+r);
-  acc += 0.5f * sampleY(Y, w, h, x+r, y+r);
-
-  return acc / 22.0f;
 }
-
-static inline float softDeadzone(float x, float threshold) {
-  float a = std::fabs(x);
-  if (a <= threshold) return 0.0f;
-  float d = a - threshold;
-  float knee = smoothstep(0.0f, threshold * 2.0f + 1.0e-6f, d);
-  return (x < 0.0f ? -1.0f : 1.0f) * d * knee;
-}
-
-static inline float softLimit(float x, float limit) {
-  float L = std::max(limit, 1.0e-6f);
-  return x / (1.0f + std::fabs(x) / L);
-}
-
-static inline float likelySkinMask(float r, float g, float b, float Y) {
-  float maxc = std::max(r, std::max(g, b));
-  float minc = std::min(r, std::min(g, b));
-  float c = maxc - minc;
-  if (c <= 1e-6f || Y <= 1e-6f) return 0.0f;
-  float nr = r / (r + g + b + 1e-6f);
-  float ng = g / (r + g + b + 1e-6f);
-  float rg = smoothstep(0.32f, 0.48f, nr) * (1.0f - smoothstep(0.50f, 0.62f, nr));
-  float gg = smoothstep(0.24f, 0.38f, ng) * (1.0f - smoothstep(0.42f, 0.52f, ng));
-  float lum = smoothstep(0.05f, 0.25f, Y) * (1.0f - smoothstep(0.92f, 1.25f, Y));
-  float chroma = smoothstep(0.025f, 0.22f, c);
-  return clampf(rg * gg * lum * chroma, 0.0f, 1.0f);
-}
-
-void processRGBA(const float* src, float* dst, int width, int height, int srcStrideFloats, int dstStrideFloats, const Params& pIn) {
-  if (!src || !dst || width <= 0 || height <= 0) return;
-
-  Params p = pIn;
-  p.amount = clampf(p.amount, 0.0f, 2.0f);
-  p.depth = clampf(p.depth, -1.0f, 1.0f);
-  p.micro = clampf(p.micro, -1.0f, 1.0f);
-  p.atmosphere = clampf(p.atmosphere, -1.0f, 1.0f);
-  p.edgeSoft = clampf(p.edgeSoft, 0.0f, 1.0f);
-  p.hiPresence = clampf(p.hiPresence, 0.0f, 1.0f);
-  p.shPresence = clampf(p.shPresence, 0.0f, 1.0f);
-  p.texture = clampf(p.texture, 0.0f, 1.0f);
-  p.bloom = clampf(p.bloom, 0.0f, 1.0f);
-  p.skinGuard = clampf(p.skinGuard, 0.0f, 1.0f);
-
-  const int n = width * height;
-  std::vector<float> Y(n);
-  for (int y = 0; y < height; ++y) {
-    for (int x = 0; x < width; ++x) {
-      const float* px = src + y * srcStrideFloats + x * 4;
-      Y[y * width + x] = luma(px[0], px[1], px[2]);
-    }
-  }
-
-  int rSmall = std::max(1, width / 420);
-  int rLarge = std::max(4, width / 85);
-  int rBloom = std::max(6, width / 55);
-
-  for (int y = 0; y < height; ++y) {
-    for (int x = 0; x < width; ++x) {
-      int i = y * width + x;
-      const float* s = src + y * srcStrideFloats + x * 4;
-      float* d = dst + y * dstStrideFloats + x * 4;
-
-      float r = s[0], g = s[1], b = s[2], a = s[3];
-      float yy = Y[i];
-
-      float small = blur17(Y, width, height, x, y, rSmall);
-      float large = blur17(Y, width, height, x, y, rLarge);
-      float big = blur17(Y, width, height, x, y, rBloom);
-
-      float broadRaw = yy - large;
-      float midRaw = small - large;
-      float fineRaw = yy - small;
-
-      float noiseFloor = 0.0015f + 0.0020f * clampf(std::fabs(yy), 0.0f, 1.5f);
-      float broad = softDeadzone(broadRaw, noiseFloor * 1.25f);
-      float fine = softDeadzone(fineRaw, noiseFloor);
-      float mid = softDeadzone(midRaw, noiseFloor * 0.65f);
-
-      float edgeEnergy = std::fabs(fine) + 0.45f * std::fabs(mid);
-      float edgeMask = smoothstep(0.004f, 0.045f, edgeEnergy);
-
-      float skin = likelySkinMask(r, g, b, yy);
-      float protect = 1.0f - p.skinGuard * skin;
-
-      float hi = smoothstep(0.55f, 1.15f, yy);
-      float sh = 1.0f - smoothstep(0.05f, 0.35f, yy);
-
-      float broadGuard = 1.0f - 0.72f * edgeMask;
-      float detailGuard = 1.0f - p.edgeSoft * (0.55f + 0.35f * edgeMask);
-      float textureGate = smoothstep(noiseFloor * 1.6f, noiseFloor * 6.0f + 1.0e-6f, std::fabs(fineRaw));
-
-      float presence = 0.0f;
-      presence += p.depth * broad * broadGuard * 1.05f;
-      presence += p.micro * fine * detailGuard * 0.68f;
-      presence += p.hiPresence * hi * mid * 0.62f;
-      presence += p.shPresence * sh * mid * 0.66f;
-      presence += p.texture * fine * textureGate * detailGuard * (1.0f - skin * 0.70f) * 0.24f;
-      presence += p.atmosphere * broad * broadGuard * 0.45f;
-
-      float bloomEnergy = std::max(0.0f, big - 0.72f);
-      float bloom = p.bloom * bloomEnergy * 0.10f;
-
-      float delta = (presence * protect + bloom) * p.amount;
-      float maxDelta = 0.045f + 0.11f * clampf(std::fabs(yy), 0.0f, 1.5f);
-      delta = softLimit(delta, maxDelta);
-
-      // Equal encoded RGB offset: preserves R-G, G-B and R-B differences exactly.
-      float rr = r + delta;
-      float gg = g + delta;
-      float bb = b + delta;
-
-      if (p.view == 1) {
-        float m = clamp01(0.5f + presence * 6.0f);
-        d[0] = d[1] = d[2] = m;
-      } else if (p.view == 2) {
-        float m = clamp01(edgeMask);
-        d[0] = d[1] = d[2] = m;
-      } else if (p.view == 3) {
-        float m = clamp01(std::fabs(delta) * 8.0f);
-        d[0] = d[1] = d[2] = m;
-      } else {
-        d[0] = rr;
-        d[1] = gg;
-        d[2] = bb;
-      }
-      d[3] = a;
-    }
-  }
-}
-
-} // namespace presence

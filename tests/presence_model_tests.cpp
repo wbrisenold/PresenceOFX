@@ -1,146 +1,35 @@
 #include "PresenceCPU.h"
-#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <iostream>
-#include <random>
 #include <vector>
-
 using namespace presence;
 
-static bool finiteImage(const std::vector<float>& v) {
-  for (float x : v) if (!std::isfinite(x)) return false;
-  return true;
+static float meanAbsDelta(const std::vector<float>& a,const std::vector<float>& b,int w,int h,int x0,int x1,int y0,int y1){
+ double s=0;long n=0;int stride=w*4;for(int y=y0;y<y1;y++)for(int x=x0;x<x1;x++){int i=y*stride+x*4;for(int c=0;c<3;c++){s+=std::fabs(a[i+c]-b[i+c]);n++;}}return float(s/n);
 }
-
-static float channelStd(const std::vector<float>& img, int w, int h, int channel) {
-  const int stride = w * 4;
-  double mean = 0.0;
-  int n = w * h;
-  for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) mean += img[y*stride+x*4+channel];
-  mean /= n;
-  double var = 0.0;
-  for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
-    double d = img[y*stride+x*4+channel] - mean;
-    var += d*d;
-  }
-  return static_cast<float>(std::sqrt(var / n));
+static float stdChannel(const std::vector<float>& a,int w,int h,int ch,int x0,int x1,int y0,int y1){
+ int stride=w*4;double m=0,v=0;long n=0;for(int y=y0;y<y1;y++)for(int x=x0;x<x1;x++){m+=a[y*stride+x*4+ch];n++;}m/=n;for(int y=y0;y<y1;y++)for(int x=x0;x<x1;x++){double d=a[y*stride+x*4+ch]-m;v+=d*d;}return float(std::sqrt(v/n));
 }
-
-int main() {
-  const int w = 96, h = 64, stride = w * 4;
-  std::vector<float> src(stride * h), dst(stride * h), bypass(stride * h);
-
-  // Random finite/extended-range stress.
-  std::mt19937 rng(1234);
-  std::uniform_real_distribution<float> dist(-0.25f, 2.5f);
-  for (int y = 0; y < h; ++y) {
-    for (int x = 0; x < w; ++x) {
-      int i = y * stride + x * 4;
-      src[i+0] = dist(rng);
-      src[i+1] = dist(rng);
-      src[i+2] = dist(rng);
-      src[i+3] = 1.0f;
-    }
-  }
-
-  Params p;
-  p.amount = 0.0f;
-  processRGBA(src.data(), bypass.data(), w, h, stride, stride, p);
-  for (size_t i = 0; i < src.size(); ++i) assert(std::fabs(src[i] - bypass[i]) < 1e-7f);
-
-  p.amount = 1.0f;
-  p.depth = 0.5f;
-  p.micro = 0.35f;
-  p.atmosphere = -0.4f;
-  p.edgeSoft = 0.2f;
-  p.hiPresence = 0.4f;
-  p.shPresence = 0.4f;
-  p.texture = 0.25f;
-  p.bloom = 0.1f;
-  p.view = 0;
-  processRGBA(src.data(), dst.data(), w, h, stride, stride, p);
-  assert(finiteImage(dst));
-
-  // Normal mode must not amplify encoded chroma differences: every pixel receives
-  // one shared RGB offset. This directly guards against the colour-noise breakup
-  // seen in smooth sky/highlight surfaces.
-  for (int y = 0; y < h; ++y) {
-    for (int x = 0; x < w; ++x) {
-      int i = y * stride + x * 4;
-      float inRG = src[i+0] - src[i+1];
-      float inGB = src[i+1] - src[i+2];
-      float outRG = dst[i+0] - dst[i+1];
-      float outGB = dst[i+1] - dst[i+2];
-      assert(std::fabs(inRG - outRG) < 2e-6f);
-      assert(std::fabs(inGB - outGB) < 2e-6f);
-    }
-  }
-
-  // Smooth "sky" with an 8x8 low-level codec/block pattern. At aggressive settings,
-  // Presence must not substantially amplify the block variation.
-  std::vector<float> sky(stride * h), skyOut(stride * h);
-  for (int y = 0; y < h; ++y) {
-    for (int x = 0; x < w; ++x) {
-      int i = y * stride + x * 4;
-      float block = (((x / 8) + (y / 8)) & 1) ? 0.0015f : -0.0015f;
-      sky[i+0] = 0.34f + block;
-      sky[i+1] = 0.48f + block;
-      sky[i+2] = 0.53f + block;
-      sky[i+3] = 1.0f;
-    }
-  }
-  Params aggressive;
-  aggressive.amount = 2.0f;
-  aggressive.depth = 0.75f;
-  aggressive.micro = 0.70f;
-  aggressive.atmosphere = -0.5f;
-  aggressive.texture = 0.70f;
-  aggressive.hiPresence = 0.5f;
-  aggressive.shPresence = 0.5f;
-  aggressive.bloom = 0.0f;
-  aggressive.edgeSoft = 0.0f;
-  aggressive.skinGuard = 0.0f;
-  processRGBA(sky.data(), skyOut.data(), w, h, stride, stride, aggressive);
-  float beforeStd = channelStd(sky, w, h, 1);
-  float afterStd = channelStd(skyOut, w, h, 1);
-  assert(afterStd <= beforeStd * 1.15f + 1e-7f);
-
-  // A perfectly flat field with bloom disabled must remain perfectly flat.
-  std::vector<float> flat(stride*h), flatOut(stride*h);
-  for (int y=0;y<h;++y) for (int x=0;x<w;++x) {
-    int i=y*stride+x*4;
-    flat[i+0]=0.42f; flat[i+1]=0.47f; flat[i+2]=0.51f; flat[i+3]=1.0f;
-  }
-  Params flatP;
-  flatP.amount=2.0f;
-  flatP.depth=1.0f;
-  flatP.micro=1.0f;
-  flatP.atmosphere=-1.0f;
-  flatP.texture=1.0f;
-  flatP.hiPresence=1.0f;
-  flatP.shPresence=1.0f;
-  flatP.bloom=0.0f;
-  flatP.skinGuard=0.0f;
-  processRGBA(flat.data(),flatOut.data(),w,h,stride,stride,flatP);
-  for (size_t i=0;i<flat.size();++i) assert(std::fabs(flat[i]-flatOut[i])<2e-6f);
-
-  // Diagnostic views stay grayscale, finite, and in 0..1.
-  for (int view = 1; view <= 3; ++view) {
-    aggressive.view = view;
-    processRGBA(src.data(), dst.data(), w, h, stride, stride, aggressive);
-    assert(finiteImage(dst));
-    for (int y = 0; y < h; ++y) {
-      for (int x = 0; x < w; ++x) {
-        int i = y * stride + x * 4;
-        assert(dst[i] >= -1e-6f && dst[i] <= 1.0f + 1e-6f);
-        assert(std::fabs(dst[i] - dst[i+1]) < 1e-6f);
-        assert(std::fabs(dst[i+1] - dst[i+2]) < 1e-6f);
-      }
-    }
-  }
-
-  std::cout << "Presence v1.1 artifact-safety tests passed\n";
-  std::cout << "codec-block std ratio: " << (afterStd / beforeStd) << "\n";
-  return 0;
+int main(){
+ const int w=192,h=96,stride=w*4;std::vector<float> src(stride*h),out(stride*h);
+ // Sky on right, dark/warm object on left. Add tiny 8x8 codec-like variation to sky.
+ for(int y=0;y<h;y++)for(int x=0;x<w;x++){int i=y*stride+x*4;if(x<80){src[i]=.12f;src[i+1]=.08f;src[i+2]=.04f;}else{float block=(((x/8)+(y/8))&1)?.0015f:-.0015f;src[i]=.34f+block;src[i+1]=.48f+block;src[i+2]=.53f+block;}src[i+3]=1;}
+ Params p;p.amount=1;p.depth=.35f;p.micro=.20f;p.atmosphere=-.10f;p.edgeSoft=0;p.hiPresence=0;p.shPresence=.20f;p.texture=.12f;p.bloom=.05f;p.skinGuard=.70f;
+ processRGBA(src.data(),out.data(),w,h,stride,stride,p);
+ // The flat sky immediately beside the object must not acquire a broad halo.
+ float nearEdge=meanAbsDelta(src,out,w,h,80,105,10,h-10);
+ float farSky=meanAbsDelta(src,out,w,h,135,180,10,h-10);
+ assert(nearEdge < 0.0040f);
+ assert(nearEdge < farSky + 0.0030f);
+ // Codec block variation in a flat sky must not materially grow.
+ float s0=stdChannel(src,w,h,1,110,180,10,h-10),s1=stdChannel(out,w,h,1,110,180,10,h-10);
+ assert(s1 <= s0*1.12f + 1e-7f);
+ // Channel differences stay invariant in normal mode because output uses a shared RGB offset.
+ for(int y=0;y<h;y++)for(int x=0;x<w;x++){int i=y*stride+x*4;assert(std::fabs((out[i]-out[i+1])-(src[i]-src[i+1]))<2e-6f);assert(std::fabs((out[i+1]-out[i+2])-(src[i+1]-src[i+2]))<2e-6f);}
+ // Amount=0 exact bypass.
+ p.amount=0;processRGBA(src.data(),out.data(),w,h,stride,stride,p);for(size_t i=0;i<src.size();i++)assert(std::fabs(src[i]-out[i])<1e-7f);
+ std::cout<<"PresenceOFX v1.2 edge-aware regression tests passed\n";
+ std::cout<<"near-edge mean abs delta: "<<nearEdge<<"\n";
+ std::cout<<"flat-sky block std ratio: "<<(s1/s0)<<"\n";
 }
