@@ -17,30 +17,53 @@ static inline float smoothstep(float e0, float e1, float x) {
 
 static inline int clampi(int x, int a, int b) { return std::max(a, std::min(b, x)); }
 
-static void boxBlurLuma(const std::vector<float>& in, std::vector<float>& out, int w, int h, int radius) {
-  if (radius <= 0) { out = in; return; }
-  std::vector<float> tmp(w * h, 0.0f);
-  const int win = radius * 2 + 1;
-  for (int y = 0; y < h; ++y) {
-    float acc = 0.0f;
-    for (int x = -radius; x <= radius; ++x) acc += in[y * w + clampi(x, 0, w - 1)];
-    for (int x = 0; x < w; ++x) {
-      tmp[y * w + x] = acc / static_cast<float>(win);
-      int x0 = clampi(x - radius, 0, w - 1);
-      int x1 = clampi(x + radius + 1, 0, w - 1);
-      acc += in[y * w + x1] - in[y * w + x0];
-    }
-  }
-  for (int x = 0; x < w; ++x) {
-    float acc = 0.0f;
-    for (int y = -radius; y <= radius; ++y) acc += tmp[clampi(y, 0, h - 1) * w + x];
-    for (int y = 0; y < h; ++y) {
-      out[y * w + x] = acc / static_cast<float>(win);
-      int y0 = clampi(y - radius, 0, h - 1);
-      int y1 = clampi(y + radius + 1, 0, h - 1);
-      acc += tmp[y1 * w + x] - tmp[y0 * w + x];
-    }
-  }
+static inline float sampleY(const std::vector<float>& Y, int w, int h, int x, int y) {
+  x = clampi(x, 0, w - 1);
+  y = clampi(y, 0, h - 1);
+  return Y[y * w + x];
+}
+
+// CPU parity for the Metal 17-tap multi-ring blur.
+static inline float blur17(const std::vector<float>& Y, int w, int h, int x, int y, int radius) {
+  int r = std::max(1, radius);
+  int half = std::max(1, r / 2);
+
+  float acc = 4.0f * sampleY(Y, w, h, x, y);
+
+  acc += 2.0f * sampleY(Y, w, h, x-half, y);
+  acc += 2.0f * sampleY(Y, w, h, x+half, y);
+  acc += 2.0f * sampleY(Y, w, h, x, y-half);
+  acc += 2.0f * sampleY(Y, w, h, x, y+half);
+
+  acc += sampleY(Y, w, h, x-half, y-half);
+  acc += sampleY(Y, w, h, x+half, y-half);
+  acc += sampleY(Y, w, h, x-half, y+half);
+  acc += sampleY(Y, w, h, x+half, y+half);
+
+  acc += sampleY(Y, w, h, x-r, y);
+  acc += sampleY(Y, w, h, x+r, y);
+  acc += sampleY(Y, w, h, x, y-r);
+  acc += sampleY(Y, w, h, x, y+r);
+
+  acc += 0.5f * sampleY(Y, w, h, x-r, y-r);
+  acc += 0.5f * sampleY(Y, w, h, x+r, y-r);
+  acc += 0.5f * sampleY(Y, w, h, x-r, y+r);
+  acc += 0.5f * sampleY(Y, w, h, x+r, y+r);
+
+  return acc / 22.0f;
+}
+
+static inline float softDeadzone(float x, float threshold) {
+  float a = std::fabs(x);
+  if (a <= threshold) return 0.0f;
+  float d = a - threshold;
+  float knee = smoothstep(0.0f, threshold * 2.0f + 1.0e-6f, d);
+  return (x < 0.0f ? -1.0f : 1.0f) * d * knee;
+}
+
+static inline float softLimit(float x, float limit) {
+  float L = std::max(limit, 1.0e-6f);
+  return x / (1.0f + std::fabs(x) / L);
 }
 
 static inline float likelySkinMask(float r, float g, float b, float Y) {
@@ -59,6 +82,7 @@ static inline float likelySkinMask(float r, float g, float b, float Y) {
 
 void processRGBA(const float* src, float* dst, int width, int height, int srcStrideFloats, int dstStrideFloats, const Params& pIn) {
   if (!src || !dst || width <= 0 || height <= 0) return;
+
   Params p = pIn;
   p.amount = clampf(p.amount, 0.0f, 2.0f);
   p.depth = clampf(p.depth, -1.0f, 1.0f);
@@ -72,7 +96,7 @@ void processRGBA(const float* src, float* dst, int width, int height, int srcStr
   p.skinGuard = clampf(p.skinGuard, 0.0f, 1.0f);
 
   const int n = width * height;
-  std::vector<float> Y(n), blurSmall(n), blurLarge(n), blurBloom(n);
+  std::vector<float> Y(n);
   for (int y = 0; y < height; ++y) {
     for (int x = 0; x < width; ++x) {
       const float* px = src + y * srcStrideFloats + x * 4;
@@ -83,71 +107,77 @@ void processRGBA(const float* src, float* dst, int width, int height, int srcStr
   int rSmall = std::max(1, width / 420);
   int rLarge = std::max(4, width / 85);
   int rBloom = std::max(6, width / 55);
-  boxBlurLuma(Y, blurSmall, width, height, rSmall);
-  boxBlurLuma(Y, blurLarge, width, height, rLarge);
-  boxBlurLuma(Y, blurBloom, width, height, rBloom);
 
   for (int y = 0; y < height; ++y) {
     for (int x = 0; x < width; ++x) {
       int i = y * width + x;
       const float* s = src + y * srcStrideFloats + x * 4;
       float* d = dst + y * dstStrideFloats + x * 4;
+
       float r = s[0], g = s[1], b = s[2], a = s[3];
       float yy = Y[i];
 
-      float broad = yy - blurLarge[i];
-      float mid = blurSmall[i] - blurLarge[i];
-      float fine = yy - blurSmall[i];
-      float edge = std::fabs(fine) + 0.45f * std::fabs(mid);
-      float edgeMask = smoothstep(0.006f, 0.055f, edge);
+      float small = blur17(Y, width, height, x, y, rSmall);
+      float large = blur17(Y, width, height, x, y, rLarge);
+      float big = blur17(Y, width, height, x, y, rBloom);
+
+      float broadRaw = yy - large;
+      float midRaw = small - large;
+      float fineRaw = yy - small;
+
+      float noiseFloor = 0.0015f + 0.0020f * clampf(std::fabs(yy), 0.0f, 1.5f);
+      float broad = softDeadzone(broadRaw, noiseFloor * 1.25f);
+      float fine = softDeadzone(fineRaw, noiseFloor);
+      float mid = softDeadzone(midRaw, noiseFloor * 0.65f);
+
+      float edgeEnergy = std::fabs(fine) + 0.45f * std::fabs(mid);
+      float edgeMask = smoothstep(0.004f, 0.045f, edgeEnergy);
+
       float skin = likelySkinMask(r, g, b, yy);
       float protect = 1.0f - p.skinGuard * skin;
 
       float hi = smoothstep(0.55f, 1.15f, yy);
       float sh = 1.0f - smoothstep(0.05f, 0.35f, yy);
+
+      float broadGuard = 1.0f - 0.72f * edgeMask;
+      float detailGuard = 1.0f - p.edgeSoft * (0.55f + 0.35f * edgeMask);
+      float textureGate = smoothstep(noiseFloor * 1.6f, noiseFloor * 6.0f + 1.0e-6f, std::fabs(fineRaw));
+
       float presence = 0.0f;
-      presence += p.depth * broad * 1.20f;
-      presence += p.micro * fine * (0.80f - 0.45f * p.edgeSoft * edgeMask);
-      presence += p.hiPresence * hi * mid * 0.75f;
-      presence += p.shPresence * sh * mid * 0.85f;
-      presence += p.texture * fine * (1.0f - skin * 0.65f) * 0.35f;
+      presence += p.depth * broad * broadGuard * 1.05f;
+      presence += p.micro * fine * detailGuard * 0.68f;
+      presence += p.hiPresence * hi * mid * 0.62f;
+      presence += p.shPresence * sh * mid * 0.66f;
+      presence += p.texture * fine * textureGate * detailGuard * (1.0f - skin * 0.70f) * 0.24f;
+      presence += p.atmosphere * broad * broadGuard * 0.45f;
 
-      float haze = blurLarge[i] - yy;
-      presence += (-p.atmosphere) * haze * 0.55f;
+      float bloomEnergy = std::max(0.0f, big - 0.72f);
+      float bloom = p.bloom * bloomEnergy * 0.10f;
 
-      float bloomSrc = std::max(0.0f, yy - 0.70f);
-      float bloom = p.bloom * smoothstep(0.0f, 0.8f, blurBloom[i]) * bloomSrc * 0.35f;
+      float delta = (presence * protect + bloom) * p.amount;
+      float maxDelta = 0.045f + 0.11f * clampf(std::fabs(yy), 0.0f, 1.5f);
+      delta = softLimit(delta, maxDelta);
 
-      float newY = yy + presence * protect + bloom;
-      float scale = (std::fabs(yy) > 1e-6f) ? (newY / yy) : 1.0f;
-      scale = clampf(scale, 0.05f, 8.0f);
-      float rr = r * scale;
-      float gg = g * scale;
-      float bb = b * scale;
+      // Equal encoded RGB offset: preserves R-G, G-B and R-B differences exactly.
+      float rr = r + delta;
+      float gg = g + delta;
+      float bb = b + delta;
 
-      if (p.edgeSoft > 0.0f) {
-        float soft = p.edgeSoft * edgeMask * 0.15f;
-        rr = rr * (1.0f - soft) + blurSmall[i] * soft;
-        gg = gg * (1.0f - soft) + blurSmall[i] * soft;
-        bb = bb * (1.0f - soft) + blurSmall[i] * soft;
-      }
-
-      float amount = p.amount;
       if (p.view == 1) {
         float m = clamp01(0.5f + presence * 6.0f);
-        d[0] = d[1] = d[2] = m; d[3] = a;
+        d[0] = d[1] = d[2] = m;
       } else if (p.view == 2) {
         float m = clamp01(edgeMask);
-        d[0] = d[1] = d[2] = m; d[3] = a;
+        d[0] = d[1] = d[2] = m;
       } else if (p.view == 3) {
-        float m = clamp01(std::fabs((rr + gg + bb) - (r + g + b)) * 0.8f);
-        d[0] = d[1] = d[2] = m; d[3] = a;
+        float m = clamp01(std::fabs(delta) * 8.0f);
+        d[0] = d[1] = d[2] = m;
       } else {
-        d[0] = r + (rr - r) * amount;
-        d[1] = g + (gg - g) * amount;
-        d[2] = b + (bb - b) * amount;
-        d[3] = a;
+        d[0] = rr;
+        d[1] = gg;
+        d[2] = bb;
       }
+      d[3] = a;
     }
   }
 }
