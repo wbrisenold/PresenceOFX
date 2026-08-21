@@ -23,8 +23,19 @@ It is not a film-emulation plugin and it is not a LUT. It is a spatial image-cha
 Typical pre-ODT grading stack:
 
 ```text
-WB Presets -> Keystone -> Chromatic Divide if needed -> Advanced Toning -> PresenceOFX -> Film/Texture -> ODT
+CST: camera -> AWG3 / LogC3
+    -> PresenceOFX
+    -> Keystone
+    -> PrimeraSkin
+    -> HB Color Separation DCTL
+    -> KH Gamut Compressor
+    -> Referent LogC3 -> Rec.709 ODT LUT
+    -> FilmBox Rec.709 look LUT
+    -> MonoNodes Balance Charts
 ```
+
+Advanced Toning and inactive LookLab WB are normally redundant in this tree.
+Use either one only when a shot specifically needs its standalone behavior.
 
 For display-referred finishing, use less Amount and less Micro.
 
