@@ -1,8 +1,8 @@
 # PresenceOFX
 
-**PresenceOFX** is an OpenFX image-character plugin for DaVinci Resolve. It is designed for the problem where footage is technically balanced but still feels thin, cheap, hazy, or not fully present.
+**PresenceOFX** is the image-character stage in a small DaVinci Resolve system. It sits after the camera transform and before Keystone, giving technically balanced footage more dimensionality without turning the grade into a stack of disconnected effects.
 
-It is not a film-emulation plugin and it is not a LUT. It is a spatial image-character stage that adds dimensionality through local tonal separation, frequency shaping, edge-safe presence, highlight/shadow detail, subtle optical bloom, and texture response.
+It is not a film-emulation plugin and it is not a LUT. It shapes the image spatially through local tonal separation, frequency shaping, edge-safe presence, highlight/shadow detail, subtle optical bloom, and texture response. The output stays in the working signal so Keystone can perform the technical balance that follows.
 
 ## Core controls
 
@@ -26,15 +26,13 @@ Typical pre-ODT grading stack:
 CST: camera -> AWG3 / LogC3
     -> PresenceOFX
     -> Keystone
-    -> PrimeraSkin
     -> HB Color Separation DCTL
-    -> KH Gamut Compressor
-    -> Referent LogC3 -> Rec.709 ODT LUT
-    -> FilmBox Rec.709 look LUT
-    -> MonoNodes Balance Charts
+    -> Referent ODT: LogC3 -> display space
+    -> Look LUT: display-referred look
+    -> MonoNodes Chart DCTL: final chart / display QC
 ```
 
-LookLab WB is optional and normally remains off when Keystone is handling white balance.
+The connected system keeps PresenceOFX and Keystone in the LogC3 working space. After Keystone, Henry Bobeck's paid [Color Separation DCTL](https://henrybobeck.com/dctl/ColorSeparation) provides a separate creative separation stage. Purchase it from Henry if you use it; it is not part of this repository.
 
 For display-referred finishing, use less Amount and less Micro.
 
@@ -90,3 +88,7 @@ Restart Resolve after installing.
 ## Production status
 
 This is a production-candidate repo package. The CPU algorithm and test harness are included, and GitHub Actions performs binary validation. The true release gate is Resolve runtime testing on representative footage.
+
+## AI-assisted development and testing
+
+This project was vibe coded with human direction and AI assistance, then organized around explicit source code, tests, ABI checks, and GitHub Actions validation. The connected workflow was tested on Apple Log and Canon Log 3 footage. Those tests reflect the author's setup and do not replace a host test on your Resolve version, GPU, and media.
