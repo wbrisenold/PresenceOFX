@@ -34,8 +34,7 @@ CST: camera -> AWG3 / LogC3
     -> MonoNodes Balance Charts
 ```
 
-Advanced Toning and inactive LookLab WB are normally redundant in this tree.
-Use either one only when a shot specifically needs its standalone behavior.
+LookLab WB is optional and normally remains off when Keystone is handling white balance.
 
 For display-referred finishing, use less Amount and less Micro.
 
