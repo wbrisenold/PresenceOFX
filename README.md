@@ -27,12 +27,12 @@ CST: camera -> AWG3 / LogC3
     -> PresenceOFX
     -> Keystone
     -> HB Color Separation DCTL
-    -> Referent ODT: LogC3 -> display space
+    -> [Referent ODT](https://cullenkellycolor.com/toolkit/referent): LogC3 -> display space
     -> Look LUT: display-referred look
-    -> MonoNodes Chart DCTL: final chart / display QC
+    -> [MonoNodes Chart DCTL](https://mononodes.com/dctls/): final chart / display QC
 ```
 
-The connected system keeps PresenceOFX and Keystone in the LogC3 working space. After Keystone, Henry Bobeck's paid [Color Separation DCTL](https://henrybobeck.com/dctl/ColorSeparation) provides a separate creative separation stage. Purchase it from Henry if you use it; it is not part of this repository.
+The connected system keeps PresenceOFX and Keystone in the LogC3 working space. After Keystone, Henry Bobeck's paid [Color Separation DCTL](https://henrybobeck.com/dctl/ColorSeparation) provides a separate creative separation stage. [Referent](https://cullenkellycolor.com/toolkit/referent) is Cullen Kelly's free viewing LUT and display foundation, while [MonoNodes](https://mononodes.com/dctls/) provides DCTL and workflow tools for the chart/QC end of the chain. Purchase the paid separation tool from Henry if you use it; none of these companion tools are part of this repository.
 
 For display-referred finishing, use less Amount and less Micro.
 
