@@ -4,6 +4,33 @@
 
 It is not a film-emulation plugin and it is not a LUT. It shapes the image spatially through local tonal separation, frequency shaping, edge-safe presence, highlight/shadow detail, subtle optical bloom, and texture response. The output stays in the working signal so Keystone can perform the technical balance that follows.
 
+## Start here if you are new
+
+PresenceOFX is the **make the image feel nicer** part of the larger system. It
+does not fix a wrong camera transform, and it does not turn a pale Log clip into
+a finished picture by itself.
+
+1. Record or import a short clip. A supported phone may record Apple Log with Blackmagic Camera.
+2. Open Resolve Studio and go to the Color page.
+3. Add the CST first. This is the translator that tells Resolve what the camera recorded.
+4. Add PresenceOFX after the CST.
+5. Keep Amount low. Change one control, then bypass the node to compare.
+6. Add Keystone after PresenceOFX for white balance, exposure, tone, and density.
+
+![Resolve node editor](https://wbrisenold.github.io/KB-Tools/assets/images/resolve/nodes.jpg)
+
+**Analogy:** PresenceOFX is like changing hard ceiling light into softer window
+light. It can make faces and objects feel more comfortable, but it cannot level
+the floor or tell the camera what language it recorded.
+
+If words like Log, exposure, or node are unfamiliar, start with the [Beginner Handbook](https://wbrisenold.github.io/KB-Tools/guides/beginner-handbook.html). It includes phone setup, plain-language explanations, pictures, and a complete first-grade recipe.
+
+### How to add PresenceOFX
+
+On the Color page, select the node after the CST, open **Effects Library** in the
+upper-right, search for **PresenceOFX**, and add it to that node. If it does not
+appear, install the bundle in `/Library/OFX/Plugins/` and restart Resolve.
+
 ## Before you start
 
 The connected workflow is written for **DaVinci Resolve Studio** and Log
