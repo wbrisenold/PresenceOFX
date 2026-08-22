@@ -11,6 +11,8 @@ footage. Log is a camera encoding that preserves more brightness range for
 grading than a ready-to-view image. It often looks pale or gray before a
 viewing transform is applied. That is expected.
 
+Before installing the plugin, look at the [Resolve visual atlas](https://wbrisenold.github.io/KB-Tools/guides/resolve-visual-atlas.html) to see the real Color page, node editor, Effects Library, scopes, and the place where PresenceOFX belongs.
+
 Your Log source may come from a cinema camera, a mirrorless camera, or a phone
 that offers a Log recording mode. A phone may already be the camera you need.
 The source format still matters: Apple Log is not Canon Log 3, and neither is
