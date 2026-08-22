@@ -4,6 +4,34 @@
 
 It is not a film-emulation plugin and it is not a LUT. It shapes the image spatially through local tonal separation, frequency shaping, edge-safe presence, highlight/shadow detail, subtle optical bloom, and texture response. The output stays in the working signal so Keystone can perform the technical balance that follows.
 
+## Before you start
+
+The connected workflow is written for **DaVinci Resolve Studio** and Log
+footage. Log is a camera encoding that preserves more brightness range for
+grading than a ready-to-view image. It often looks pale or gray before a
+viewing transform is applied. That is expected.
+
+Your Log source may come from a cinema camera, a mirrorless camera, or a phone
+that offers a Log recording mode. A phone may already be the camera you need.
+The source format still matters: Apple Log is not Canon Log 3, and neither is
+ARRI LogC3. Use a CST that matches the actual recording before PresenceOFX.
+
+The documented chain converts the source into ARRI Wide Gamut 3 / LogC3 for the
+working stages. It was tested on Apple Log and Canon Log 3 footage, but that is
+not a substitute for checking your own camera and Resolve setup.
+
+### Why PresenceOFX expects LogC3 here
+
+LogC3 is the common working language between the camera transform, PresenceOFX,
+Keystone, and Referent. The CST handles the camera-specific problem first;
+PresenceOFX can then focus on local shape, detail, atmosphere, and optical
+integration instead of compensating for different camera curves.
+
+The scene-referred LogC3 signal also gives the effect room to work before the
+display transform makes contrast and saturation look stronger. This is a choice
+for this connected system, not a claim that LogC3 is always superior to ACEScct,
+DaVinci Wide Gamut, or another managed workflow.
+
 ## PresenceOFX's role
 
 PresenceOFX belongs early in the connected tree, after the camera signal has
@@ -16,6 +44,19 @@ That distinction is useful in practice. If the image feels brittle or flat,
 PresenceOFX is the stage to audition. If the image is technically wrong,
 correct it in Keystone. If the final display foundation is wrong, inspect
 [Referent](https://cullenkellycolor.com/toolkit/referent) after the LogC3 work.
+
+## Reference pictures
+
+![Blackmagic cinema camera](https://upload.wikimedia.org/wikipedia/commons/c/cc/Blackmagic_Cinema_Camera.JPG)
+
+The camera is where the source signal begins. PresenceOFX expects the CST before
+it to have translated that camera signal into the documented LogC3 working space.
+
+![Color print film strip](https://upload.wikimedia.org/wikipedia/commons/0/06/Color_print_film_strip_03_-_positive_with_tonal_correction.jpg)
+
+Film is a useful analogy for the plugin's goal, but PresenceOFX is not film
+emulation. It changes local structure, edge behavior, atmosphere, and optical
+integration while leaving Keystone to handle the technical balance.
 
 ## Core controls
 
@@ -87,6 +128,18 @@ the whole image, so compare against the bypass at the same display transform.
 Keep Skin Guard available when the effect is used on faces, and use Edge Soft
 to reduce brittle transitions rather than blurring the entire frame.
 
+## Learn the surrounding ideas
+
+- [Blackmagic Design Color training](https://www.blackmagicdesign.com/products/davinciresolve/training) — official beginner lessons for the Color page and scopes.
+- [Cullen Kelly Color](https://www.youtube.com/@CullenKellyColor) — useful scene-referred and display-transform lessons.
+- [Cullen Kelly Referent search](https://www.youtube.com/results?search_query=Cullen+Kelly+Referent+LUT) — tutorials for the display foundation that follows PresenceOFX and Keystone.
+- [KB Tools node guide](https://wbrisenold.github.io/KB-Tools/guides/resolve-node-guide.html) — the complete chain and exact Resolve menu locations.
+
+The general videos explain grading concepts. This README answers the custom
+plugin question: use PresenceOFX when the image needs local shape, controlled
+detail, atmosphere, or optical integration, not when it needs a new CST,
+exposure correction, or display transform.
+
 ## GitHub build workflow
 
 This repo is built for users who do **not** have Xcode locally.
@@ -128,11 +181,10 @@ Install to:
 /Library/OFX/Plugins/
 ```
 
-or user-local:
-
-```text
-~/Library/OFX/Plugins/
-```
+The system folder is the documented Resolve install location on macOS and may
+require administrator permission. The included install script handles the
+system destination; do not leave a second copy in a user-level OFX folder while
+debugging plugin discovery.
 
 Restart Resolve after installing.
 
@@ -143,3 +195,8 @@ This is a production-candidate repo package. The CPU algorithm and test harness 
 ## AI-assisted development and testing
 
 This project was vibe coded with human direction and AI assistance, then organized around explicit source code, tests, ABI checks, and GitHub Actions validation. The connected workflow was tested on Apple Log and Canon Log 3 footage. Those tests reflect the author's setup and do not replace a host test on your Resolve version, GPU, and media.
+
+## Visual references
+
+- [Blackmagic Cinema Camera](https://commons.wikimedia.org/wiki/File:Blackmagic_Cinema_Camera.JPG) — MMuzammils, CC BY-SA 3.0.
+- [Color print film strip 03](https://commons.wikimedia.org/wiki/File:Color_print_film_strip_03_-_positive_with_tonal_correction.jpg) — LoMit, CC BY 4.0.
