@@ -1,231 +1,169 @@
 # PresenceOFX
 
-**PresenceOFX** is the image-character stage in a small DaVinci Resolve system. It sits after the camera transform and before Keystone, giving technically balanced footage more dimensionality without turning the grade into a stack of disconnected effects.
+PresenceOFX is the **make the picture feel better** stage in the KB Tools
+workflow for DaVinci Resolve Studio. It can add local shape, gentle detail,
+soft edges, atmosphere, highlight presence, shadow presence, texture, and small
+optical bloom.
 
-It is not a film-emulation plugin and it is not a LUT. It shapes the image spatially through local tonal separation, frequency shaping, edge-safe presence, highlight/shadow detail, subtle optical bloom, and texture response. The output stays in the working signal so Keystone can perform the technical balance that follows.
+It is not a camera translator, not an exposure tool, not a LUT, and not a film
+emulation plugin.
 
-## Start here if you are new
+## If you are new
 
-PresenceOFX is the **make the image feel nicer** part of the larger system. It
-does not fix a wrong camera transform, and it does not turn a pale Log clip into
-a finished picture by itself.
+Start with the [KB Tools Beginner Handbook](https://wbrisenold.github.io/KB-Tools/guides/beginner-handbook.html). It begins with Blackmagic Camera on a phone, explains Log and exposure, and walks through a complete first grade.
 
-1. Record or import a short clip. A supported phone may record Apple Log with Blackmagic Camera.
-2. Open Resolve Studio and go to the Color page.
-3. Add the CST first. This is the translator that tells Resolve what the camera recorded.
-4. Add PresenceOFX after the CST.
-5. Keep Amount low. Change one control, then bypass the node to compare.
-6. Add Keystone after PresenceOFX for white balance, exposure, tone, and density.
+The larger order is:
+
+```text
+Camera clip
+    -> CST: translate the camera file
+    -> PresenceOFX: shape the feeling
+    -> Keystone: fix balance and tone
+    -> Color Separation: choose the color relationship
+    -> Referent ODT: always-on viewing transform
+    -> Look LUT
+    -> MonoNodes QC
+```
+
+**Analogy:** PresenceOFX is like changing hard ceiling light into softer window
+light. It can make the picture more comfortable, but it cannot tell the camera
+what language it recorded or fix a picture that is too dark.
 
 ![Resolve node editor](https://wbrisenold.github.io/KB-Tools/assets/images/resolve/nodes.jpg)
 
-**Analogy:** PresenceOFX is like changing hard ceiling light into softer window
-light. It can make faces and objects feel more comfortable, but it cannot level
-the floor or tell the camera what language it recorded.
+## What you need before adding PresenceOFX
 
-If words like Log, exposure, or node are unfamiliar, start with the [Beginner Handbook](https://wbrisenold.github.io/KB-Tools/guides/beginner-handbook.html). It includes phone setup, plain-language explanations, pictures, and a complete first-grade recipe.
+- DaVinci Resolve Studio.
+- A camera or phone clip.
+- A CST before PresenceOFX.
+- The real camera Log format, if the clip was recorded in Log.
 
-### How to add PresenceOFX
+The source may be Apple Log, Canon Log 3, ARRI LogC3, or another format. Apple
+Log is not the same as Canon Log 3. The CST handles that difference before this
+plugin sees the picture.
 
-On the Color page, select the node after the CST, open **Effects Library** in the
-upper-right, search for **PresenceOFX**, and add it to that node. If it does not
-appear, install the bundle in `/Library/OFX/Plugins/` and restart Resolve.
+## How to install the plugin
 
-## Before you start
-
-The connected workflow is written for **DaVinci Resolve Studio** and Log
-footage. Log is a camera encoding that preserves more brightness range for
-grading than a ready-to-view image. It often looks pale or gray before a
-viewing transform is applied. That is expected.
-
-Before installing the plugin, start with the [Beginner Handbook](https://wbrisenold.github.io/KB-Tools/guides/beginner-handbook.html), then look at the [Resolve visual atlas](https://wbrisenold.github.io/KB-Tools/guides/resolve-visual-atlas.html) to see the real Color page, node editor, Effects Library, scopes, and the place where PresenceOFX belongs.
-
-Your Log source may come from a cinema camera, a mirrorless camera, or a phone
-that offers a Log recording mode. A phone may already be the camera you need.
-The source format still matters: Apple Log is not Canon Log 3, and neither is
-ARRI LogC3. Use a CST that matches the actual recording before PresenceOFX.
-
-The documented chain converts the source into ARRI Wide Gamut 3 / LogC3 for the
-working stages. It was tested on Apple Log and Canon Log 3 footage, but that is
-not a substitute for checking your own camera and Resolve setup.
-
-### Why PresenceOFX expects LogC3 here
-
-LogC3 is the common working language between the camera transform, PresenceOFX,
-Keystone, and Referent. The CST handles the camera-specific problem first;
-PresenceOFX can then focus on local shape, detail, atmosphere, and optical
-integration instead of compensating for different camera curves.
-
-The scene-referred LogC3 signal also gives the effect room to work before the
-display transform makes contrast and saturation look stronger. This is a choice
-for this connected system, not a claim that LogC3 is always superior to ACEScct,
-DaVinci Wide Gamut, or another managed workflow.
-
-## PresenceOFX's role
-
-PresenceOFX belongs early in the connected tree, after the camera signal has
-been transformed to LogC3 and before Keystone performs the main balance. It is
-for image structure and character: local separation, controlled detail,
-edge behavior, atmosphere, and restrained optical integration. It is not the
-place to solve exposure, display conversion, or a finished film look.
-
-That distinction is useful in practice. If the image feels brittle or flat,
-PresenceOFX is the stage to audition. If the image is technically wrong,
-correct it in Keystone. If the final display foundation is wrong, inspect
-[Referent](https://cullenkellycolor.com/toolkit/referent) after the LogC3 work.
-
-## Reference pictures
-
-![Blackmagic cinema camera](https://wbrisenold.github.io/KB-Tools/assets/images/resolve/camera.jpg)
-
-The camera is where the source signal begins. PresenceOFX expects the CST before
-it to have translated that camera signal into the documented LogC3 working space.
-
-![Color reference](https://wbrisenold.github.io/KB-Tools/assets/images/resolve/color-checker.svg)
-
-The chart is a useful reminder that PresenceOFX is not a color-balance tool. It
-changes local structure, edge behavior, atmosphere, and optical integration
-while leaving Keystone to handle the technical balance.
-
-## Core controls
-
-- **Amount** — global mix for the whole effect.
-- **Depth** — broad local contrast / subject separation.
-- **Micro** — mid-frequency detail contrast.
-- **Atmosphere** — negative values dehaze; positive values add air/veil.
-- **Edge Soft** — reduces brittle digital edges after presence is added.
-- **Hi Presence** — detail/shape in bright surfaces.
-- **Sh Presence** — local separation in dark areas without simply lifting blacks.
-- **Texture** — subtle surface-density response.
-- **Bloom** — small optical highlight integration.
-- **Skin Guard** — reduces harsh presence on likely skin colors.
-- **View** — Normal, Presence Mask, Edge Mask, Difference.
-
-## How it feels in a grade
-
-PresenceOFX is meant to make a digital image feel more settled, not louder.
-At sensible settings, edges lose their brittle quality, faces hold together,
-and local contrast feels more like light shaping the subject than sharpening
-being applied to the frame. The effect should be judged at the final viewing
-transform, because a small change in a scene-referred signal can become much
-more obvious after display conversion.
-
-The controls are separated by the kind of response they create:
-
-| Control | What you feel | Why the slider exists |
-|---|---|---|
-| Amount | The overall strength of the stage. | A single mix makes it easy to compare the complete character pass against bypass. |
-| Depth | Broad subject separation and a sense of dimensional weight. | It changes local structure rather than simply adding global contrast. |
-| Micro | Texture and mid-frequency articulation. | It adds definition where the image feels soft without making every edge sharper. |
-| Atmosphere | Less haze at negative values, more air or veil at positive values. | It gives the image a broad environmental response instead of a local-only effect. |
-| Edge Soft | Less brittle high-frequency transition. | It reins in digital acutance after presence has been added. |
-| Hi Presence / Sh Presence | More shape in bright surfaces or dark areas. | Highlights and shadows often need different treatment; one global contrast control cannot separate them cleanly. |
-| Texture | Subtle surface density. | It gives material a little more physical response without pretending to be film grain. |
-| Bloom | Small highlight integration. | It connects bright areas to their surroundings without turning the image into a glow effect. |
-| Skin Guard | A softer response on likely skin colors. | Presence that works on architecture or fabric can become harsh on faces. |
-| View | A way to inspect the effect instead of judging it by taste alone. | The masks show whether a slider is acting on the region you intended. |
-
-Start with Amount low, find the control that addresses the problem, then raise
-that control before raising the whole effect. If the image starts to look
-crispy, reduce Micro or add Edge Soft. If it starts to look washed out, reduce
-Atmosphere or Bloom before changing Keystone's contrast.
-
-## Suggested node placement
-
-PresenceOFX is the first creative stage after the camera transform. The complete system map is maintained in the [KB Tools node guide](https://wbrisenold.github.io/KB-Tools/guides/resolve-node-guide.html).
-
-```text
-Camera transform -> LogC3
-    -> PresenceOFX
-    -> Keystone
-    -> technical balance and later system stages
-```
-
-The connected system keeps PresenceOFX and Keystone in the LogC3 working space. After Keystone, Henry Bobeck's paid [Color Separation DCTL](https://henrybobeck.com/dctl/ColorSeparation) provides a separate creative separation stage. [Referent](https://cullenkellycolor.com/toolkit/referent) is Cullen Kelly's free viewing LUT and display foundation, while [MonoNodes](https://mononodes.com/dctls/) provides DCTL and workflow tools for the chart/QC end of the chain. Purchase the paid separation tool from Henry if you use it; none of these companion tools are part of this repository.
-
-Read the [PresenceOFX section of the system guide](https://wbrisenold.github.io/KB-Tools/guides/resolve-node-guide.html#what-each-stage-is-doing) for the handoff into Keystone and the later display stages. This README stays focused on image character and control response.
-
-For display-referred finishing, use less Amount and less Micro.
-
-## A practical starting point
-
-Begin with the effect bypassed and enable only the controls that answer the
-problem in front of you. Use the diagnostic views before increasing Amount or
-Micro. A little Depth, Micro, or Bloom can change the perceived sharpness of
-the whole image, so compare against the bypass at the same display transform.
-
-Keep Skin Guard available when the effect is used on faces, and use Edge Soft
-to reduce brittle transitions rather than blurring the entire frame.
-
-## Learn the surrounding ideas
-
-- [Blackmagic Design Color training](https://www.blackmagicdesign.com/products/davinciresolve/training) — official beginner lessons for the Color page and scopes.
-- [Cullen Kelly Color](https://www.youtube.com/@CullenKellyColor) — useful scene-referred and display-transform lessons.
-- [Cullen Kelly Referent search](https://www.youtube.com/results?search_query=Cullen+Kelly+Referent+LUT) — tutorials for the display foundation that follows PresenceOFX and Keystone.
-- [KB Tools node guide](https://wbrisenold.github.io/KB-Tools/guides/resolve-node-guide.html) — the complete chain and exact Resolve menu locations.
-
-The general videos explain grading concepts. This README answers the custom
-plugin question: use PresenceOFX when the image needs local shape, controlled
-detail, atmosphere, or optical integration, not when it needs a new CST,
-exposure correction, or display transform.
-
-## GitHub build workflow
-
-This repo is built for users who do **not** have Xcode locally.
-
-Push the repo to GitHub, then push a tag such as:
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-GitHub Actions will build a universal macOS OFX bundle and publish a release ZIP.
-
-## Architecture
-
-This follows the proven no-SDK/no-Homebrew pattern from our earlier OFX work:
-
-- no external OpenFX SDK checkout
-- no Homebrew packages
-- no `expat::expat`
-- pinned minimal OFX ABI header in `src/PresenceOFX_OFX.h`
-- CPU OpenFX renderer
-- universal `arm64` + `x86_64` binary
-- ad-hoc signed bundle
-- export-symbol checks for `OfxGetPlugin`, `OfxGetNumberOfPlugins`, and `OfxSetHost`
-- release ZIP produced automatically from tags
-
-## Install location
-
-The build output is:
+This repository can build a universal macOS OFX bundle through GitHub Actions.
+The output is:
 
 ```text
 PresenceOFX.ofx.bundle
 ```
 
-Install to:
+Install it in the system Resolve folder:
 
 ```text
 /Library/OFX/Plugins/
 ```
 
-The system folder is the documented Resolve install location on macOS and may
-require administrator permission. The included install script handles the
-system destination; do not leave a second copy in a user-level OFX folder while
-debugging plugin discovery.
+The included `scripts/install_macos.sh` uses administrator permission for that
+folder. Restart Resolve after installing. Do not leave a second copy in a
+user-level OFX folder while troubleshooting discovery.
 
-Restart Resolve after installing.
+## How to add PresenceOFX in Resolve
 
-## Production status
+1. Open the Color page.
+2. Select the node after the CST.
+3. Open Effects Library in the upper-right.
+4. Search for **PresenceOFX**.
+5. Add it to that node.
+6. Keep Amount low while you learn.
+7. Change one control, then bypass the PresenceOFX node to compare.
+8. Keep Referent enabled later in the chain because it is the ODT/viewing transform.
 
-This is a production-candidate repo package. The CPU algorithm and test harness are included, and GitHub Actions performs binary validation. The true release gate is Resolve runtime testing on representative footage.
+## Controls in everyday language
 
-## AI-assisted development and testing
+- **Amount:** how much of the whole effect you want.
+- **Depth:** broad shape and separation between parts of the picture.
+- **Micro:** small detail and crispness.
+- **Atmosphere:** less haze at negative values, more air or veil at positive values.
+- **Edge Soft:** takes the brittle edge off digital detail.
+- **Hi Presence:** adds shape to bright surfaces.
+- **Sh Presence:** adds shape to darker areas without simply lifting them.
+- **Texture:** adds a little surface feeling. It is not film grain.
+- **Bloom:** lets bright areas blend gently into nearby areas.
+- **Skin Guard:** makes the effect gentler on likely skin colors.
+- **View:** shows the normal result, the effect mask, the edge mask, or the difference.
 
-This project was vibe coded with human direction and AI assistance, then organized around explicit source code, tests, ABI checks, and GitHub Actions validation. The connected workflow was tested on Apple Log and Canon Log 3 footage. Those tests reflect the author's setup and do not replace a host test on your Resolve version, GPU, and media.
+## What to do first
 
-## Visual references
+1. Turn PresenceOFX on with Amount low.
+2. If the image feels flat, try a little Depth.
+3. If it feels soft, try a little Micro.
+4. If it feels too digital, lower Micro or use Edge Soft.
+5. If it looks foggy, lower Atmosphere or Bloom.
+6. If faces become hard, use Skin Guard and reduce the amount.
+7. Compare with the node bypassed at the same viewing transform.
 
-- [Blackmagic Cinema Camera](https://commons.wikimedia.org/wiki/File:Blackmagic_Cinema_Camera.JPG) — MMuzammils, CC BY-SA 3.0.
-- [Color print film strip 03](https://commons.wikimedia.org/wiki/File:Color_print_film_strip_03_-_positive_with_tonal_correction.jpg) — LoMit, CC BY 4.0.
+## Referent stays on
+
+Referent is Cullen Kelly's free viewing LUT and display foundation. In this
+workflow it is the ODT. Keep it enabled while you judge PresenceOFX and while
+you grade. It is not a look to turn off and on for a normal creative
+comparison.
+
+You may bypass Referent briefly to inspect the underlying LogC3 signal during
+troubleshooting, then turn it back on before making a decision.
+
+## If the result is wrong
+
+- The image is pale and gray: check the CST. PresenceOFX is not the viewing transform.
+- The image is crispy: lower Micro or Amount, then try Edge Soft.
+- The image is foggy: lower Atmosphere or Bloom.
+- Faces look too hard: use Skin Guard and reduce Micro or Hi Presence.
+- Shadows look crunchy: reduce Sh Presence or Depth.
+- You cannot tell what changed: use the View modes and bypass the node.
+- Resolve cannot find the plugin: install it in `/Library/OFX/Plugins/` and restart Resolve.
+
+## Build and validation
+
+This project uses a minimal OpenFX setup and does not require users to install
+Xcode or Homebrew locally. GitHub Actions builds the macOS bundle and checks the
+bundle exports. Local source checks are available in `ci/source_sanity.py`.
+
+The real release gate is opening the plugin in Resolve and applying it to
+representative footage without a crash. The connected workflow was tested on
+Apple Log and Canon Log 3 footage, but that does not guarantee every phone,
+camera, GPU, Resolve version, or monitoring pipeline.
+
+## Learning resources and handoff
+
+## Fifteen visual lessons for PresenceOFX users
+
+Use these cards to learn what belongs before and after PresenceOFX. The plugin
+is easier to use when you can recognize the rest of the chain:
+
+1. [Download Blackmagic Camera](https://wbrisenold.github.io/KB-Tools/guides/resolve-resource-library.html#phone-download)
+2. [Set up the phone](https://wbrisenold.github.io/KB-Tools/guides/resolve-resource-library.html#phone-settings)
+3. [Understand a pale Log clip](https://wbrisenold.github.io/KB-Tools/guides/resolve-resource-library.html#log-recording)
+4. [Find the Color page](https://wbrisenold.github.io/KB-Tools/guides/resolve-resource-library.html#color-page)
+5. [Read the node editor](https://wbrisenold.github.io/KB-Tools/guides/resolve-resource-library.html#nodes)
+6. [Check the CST before PresenceOFX](https://wbrisenold.github.io/KB-Tools/guides/resolve-resource-library.html#cst)
+7. [Use primary controls](https://wbrisenold.github.io/KB-Tools/guides/resolve-resource-library.html#primary)
+8. [Place PresenceOFX](https://wbrisenold.github.io/KB-Tools/guides/resolve-resource-library.html#presence)
+9. [Hand off to Keystone](https://wbrisenold.github.io/KB-Tools/guides/resolve-resource-library.html#keystone)
+10. [Keep the Referent ODT on](https://wbrisenold.github.io/KB-Tools/guides/resolve-resource-library.html#referent)
+11. [Keep the Look LUT after Referent](https://wbrisenold.github.io/KB-Tools/guides/resolve-resource-library.html#look)
+12. [Use waveform](https://wbrisenold.github.io/KB-Tools/guides/resolve-resource-library.html#waveform)
+13. [Use color scopes](https://wbrisenold.github.io/KB-Tools/guides/resolve-resource-library.html#color-scopes)
+14. [Use qualifier, window, and tracker](https://wbrisenold.github.io/KB-Tools/guides/resolve-resource-library.html#selections)
+15. [Compare before and after](https://wbrisenold.github.io/KB-Tools/guides/resolve-resource-library.html#compare)
+
+Each card has one picture, one beginner explanation, and one authoritative
+source link. Read the card that matches the problem you are seeing instead of
+changing several PresenceOFX controls at once.
+
+- [KB Tools Beginner Handbook](https://wbrisenold.github.io/KB-Tools/guides/beginner-handbook.html)
+- [KB Tools Resolve Visual Atlas](https://wbrisenold.github.io/KB-Tools/guides/resolve-visual-atlas.html)
+- [Blackmagic Design Color training](https://www.blackmagicdesign.com/products/davinciresolve/training)
+- [Cullen Kelly Color](https://www.youtube.com/@CullenKelly)
+- [Cullen Kelly Referent](https://cullenkellycolor.com/toolkit/referent)
+- [Keystone](https://github.com/wbrisenold/Keystone)
+
+## Credits and license
+
+PresenceOFX is distributed under the repository license. The camera and color
+reference images used in the teaching site are credited in the KB Tools visual
+references. This repository's plugin is separate from Referent, Keystone, Henry
+Bobeck's Color Separation, and MonoNodes.
