@@ -11,7 +11,7 @@ footage. Log is a camera encoding that preserves more brightness range for
 grading than a ready-to-view image. It often looks pale or gray before a
 viewing transform is applied. That is expected.
 
-Before installing the plugin, look at the [Resolve visual atlas](https://wbrisenold.github.io/KB-Tools/guides/resolve-visual-atlas.html) to see the real Color page, node editor, Effects Library, scopes, and the place where PresenceOFX belongs.
+Before installing the plugin, start with the [Beginner Handbook](https://wbrisenold.github.io/KB-Tools/guides/beginner-handbook.html), then look at the [Resolve visual atlas](https://wbrisenold.github.io/KB-Tools/guides/resolve-visual-atlas.html) to see the real Color page, node editor, Effects Library, scopes, and the place where PresenceOFX belongs.
 
 Your Log source may come from a cinema camera, a mirrorless camera, or a phone
 that offers a Log recording mode. A phone may already be the camera you need.
@@ -49,16 +49,16 @@ correct it in Keystone. If the final display foundation is wrong, inspect
 
 ## Reference pictures
 
-![Blackmagic cinema camera](https://upload.wikimedia.org/wikipedia/commons/c/cc/Blackmagic_Cinema_Camera.JPG)
+![Blackmagic cinema camera](https://wbrisenold.github.io/KB-Tools/assets/images/resolve/camera.jpg)
 
 The camera is where the source signal begins. PresenceOFX expects the CST before
 it to have translated that camera signal into the documented LogC3 working space.
 
-![Color print film strip](https://upload.wikimedia.org/wikipedia/commons/0/06/Color_print_film_strip_03_-_positive_with_tonal_correction.jpg)
+![Color reference](https://wbrisenold.github.io/KB-Tools/assets/images/resolve/color-checker.svg)
 
-Film is a useful analogy for the plugin's goal, but PresenceOFX is not film
-emulation. It changes local structure, edge behavior, atmosphere, and optical
-integration while leaving Keystone to handle the technical balance.
+The chart is a useful reminder that PresenceOFX is not a color-balance tool. It
+changes local structure, edge behavior, atmosphere, and optical integration
+while leaving Keystone to handle the technical balance.
 
 ## Core controls
 
