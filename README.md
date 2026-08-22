@@ -4,6 +4,19 @@
 
 It is not a film-emulation plugin and it is not a LUT. It shapes the image spatially through local tonal separation, frequency shaping, edge-safe presence, highlight/shadow detail, subtle optical bloom, and texture response. The output stays in the working signal so Keystone can perform the technical balance that follows.
 
+## PresenceOFX's role
+
+PresenceOFX belongs early in the connected tree, after the camera signal has
+been transformed to LogC3 and before Keystone performs the main balance. It is
+for image structure and character: local separation, controlled detail,
+edge behavior, atmosphere, and restrained optical integration. It is not the
+place to solve exposure, display conversion, or a finished film look.
+
+That distinction is useful in practice. If the image feels brittle or flat,
+PresenceOFX is the stage to audition. If the image is technically wrong,
+correct it in Keystone. If the final display foundation is wrong, inspect
+[Referent](https://cullenkellycolor.com/toolkit/referent) after the LogC3 work.
+
 ## Core controls
 
 - **Amount** — global mix for the whole effect.
@@ -35,6 +48,16 @@ CST: camera -> AWG3 / LogC3
 The connected system keeps PresenceOFX and Keystone in the LogC3 working space. After Keystone, Henry Bobeck's paid [Color Separation DCTL](https://henrybobeck.com/dctl/ColorSeparation) provides a separate creative separation stage. [Referent](https://cullenkellycolor.com/toolkit/referent) is Cullen Kelly's free viewing LUT and display foundation, while [MonoNodes](https://mononodes.com/dctls/) provides DCTL and workflow tools for the chart/QC end of the chain. Purchase the paid separation tool from Henry if you use it; none of these companion tools are part of this repository.
 
 For display-referred finishing, use less Amount and less Micro.
+
+## A practical starting point
+
+Begin with the effect bypassed and enable only the controls that answer the
+problem in front of you. Use the diagnostic views before increasing Amount or
+Micro. A little Depth, Micro, or Bloom can change the perceived sharpness of
+the whole image, so compare against the bypass at the same display transform.
+
+Keep Skin Guard available when the effect is used on faces, and use Edge Soft
+to reduce brittle transitions rather than blurring the entire frame.
 
 ## GitHub build workflow
 
