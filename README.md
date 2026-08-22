@@ -62,19 +62,18 @@ Atmosphere or Bloom before changing Keystone's contrast.
 
 ## Suggested node placement
 
-Typical pre-ODT grading stack:
+PresenceOFX is the first creative stage after the camera transform. The complete system map is maintained in the [KB Tools node guide](https://wbrisenold.github.io/KB-Tools/guides/resolve-node-guide.html).
 
 ```text
-CST: camera -> AWG3 / LogC3
+Camera transform -> LogC3
     -> PresenceOFX
     -> Keystone
-    -> HB Color Separation DCTL
-    -> [Referent ODT](https://cullenkellycolor.com/toolkit/referent): LogC3 -> display space
-    -> Look LUT: display-referred look
-    -> [MonoNodes Chart DCTL](https://mononodes.com/dctls/): final chart / display QC
+    -> technical balance and later system stages
 ```
 
 The connected system keeps PresenceOFX and Keystone in the LogC3 working space. After Keystone, Henry Bobeck's paid [Color Separation DCTL](https://henrybobeck.com/dctl/ColorSeparation) provides a separate creative separation stage. [Referent](https://cullenkellycolor.com/toolkit/referent) is Cullen Kelly's free viewing LUT and display foundation, while [MonoNodes](https://mononodes.com/dctls/) provides DCTL and workflow tools for the chart/QC end of the chain. Purchase the paid separation tool from Henry if you use it; none of these companion tools are part of this repository.
+
+Read the [PresenceOFX section of the system guide](https://wbrisenold.github.io/KB-Tools/guides/resolve-node-guide.html#what-each-stage-is-doing) for the handoff into Keystone and the later display stages. This README stays focused on image character and control response.
 
 For display-referred finishing, use less Amount and less Micro.
 
