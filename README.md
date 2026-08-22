@@ -31,6 +31,35 @@ correct it in Keystone. If the final display foundation is wrong, inspect
 - **Skin Guard** — reduces harsh presence on likely skin colors.
 - **View** — Normal, Presence Mask, Edge Mask, Difference.
 
+## How it feels in a grade
+
+PresenceOFX is meant to make a digital image feel more settled, not louder.
+At sensible settings, edges lose their brittle quality, faces hold together,
+and local contrast feels more like light shaping the subject than sharpening
+being applied to the frame. The effect should be judged at the final viewing
+transform, because a small change in a scene-referred signal can become much
+more obvious after display conversion.
+
+The controls are separated by the kind of response they create:
+
+| Control | What you feel | Why the slider exists |
+|---|---|---|
+| Amount | The overall strength of the stage. | A single mix makes it easy to compare the complete character pass against bypass. |
+| Depth | Broad subject separation and a sense of dimensional weight. | It changes local structure rather than simply adding global contrast. |
+| Micro | Texture and mid-frequency articulation. | It adds definition where the image feels soft without making every edge sharper. |
+| Atmosphere | Less haze at negative values, more air or veil at positive values. | It gives the image a broad environmental response instead of a local-only effect. |
+| Edge Soft | Less brittle high-frequency transition. | It reins in digital acutance after presence has been added. |
+| Hi Presence / Sh Presence | More shape in bright surfaces or dark areas. | Highlights and shadows often need different treatment; one global contrast control cannot separate them cleanly. |
+| Texture | Subtle surface density. | It gives material a little more physical response without pretending to be film grain. |
+| Bloom | Small highlight integration. | It connects bright areas to their surroundings without turning the image into a glow effect. |
+| Skin Guard | A softer response on likely skin colors. | Presence that works on architecture or fabric can become harsh on faces. |
+| View | A way to inspect the effect instead of judging it by taste alone. | The masks show whether a slider is acting on the region you intended. |
+
+Start with Amount low, find the control that addresses the problem, then raise
+that control before raising the whole effect. If the image starts to look
+crispy, reduce Micro or add Edge Soft. If it starts to look washed out, reduce
+Atmosphere or Bloom before changing Keystone's contrast.
+
 ## Suggested node placement
 
 Typical pre-ODT grading stack:
